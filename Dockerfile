@@ -20,96 +20,45 @@ RUN \
 
 # elasticsearch repos 
 RUN \
+	export DEBIAN_FRONTEND=noninteractive && \
 	wget -qO - http://packages.elasticsearch.org/GPG-KEY-elasticsearch | apt-key add - && \
-	echo "deb http://packages.elasticsearch.org/elasticsearch/1.3/debian stable main" >> /etc/apt/sources.list && \
-	echo "deb http://packages.elasticsearch.org/logstash/1.4/debian stable main" >> /etc/apt/sources.list && \
+	if ! grep "elasticsearch" /etc/apt/sources.list; then echo "deb http://packages.elasticsearch.org/elasticsearch/1.3/debian stable main" >> /etc/apt/sources.list;fi && \
+	if ! grep "logstash" /etc/apt/sources.list; then echo "deb http://packages.elasticsearch.org/logstash/1.4/debian stable main" >> /etc/apt/sources.list;fi && \
 	apt-get update
 
 # install elasticsearch
 RUN \
+	export DEBIAN_FRONTEND=noninteractive && \
 	apt-get install -y elasticsearch && \
 	sed -i '/# cluster.name:.*/a cluster.name: logstash' /etc/elasticsearch/elasticsearch.yml && \
-	cat << EOF > /etc/supervisor/conf.d/elasticsearch.conf
-[program:elasticsearch]
-command=/usr/share/elasticsearch/bin/elasticsearch -f -p /var/run/elasticsearch/elasticsearch.pid \
-		-Des.default.path.home=/usr/share/elasticsearch \
-		-Des.default.path.logs=/var/log/elasticsearch \
-		-Des.default.path.data=/var/lib/elasticsearch \
-		-Des.default.path.work=/tmp/elasticsearch \
-		-Des.default.path.conf=/etc/elasticsearch
-stdout_logfile=/var/log/supervisor/%(program_name)s.log
-redirect_stderr=true
-stdout_syslog=true
-autorestart=true
-priority=10
-EOF
+	sed -i '/# path.data:.*/a path.data: /mnt/data/data' /etc/elasticsearch/elasticsearch.yml
+
+# configure elasticsearch
+ADD etc/supervisor/conf.d/elasticsearch.conf /etc/supervisor/conf.d/elasticsearch.conf
 
 # install logstash
 RUN \
-	apt-get install -y logstash && \
-	cat << EOF > /etc/supervisor/conf.d/logstash.conf
-[program:logstash]
-command=/opt/logstash/bin/logstash agent -f /etc/logstash/conf.d/ 
-stdout_logfile=/var/log/supervisor/%(program_name)s.log
-redirect_stderr=true
-stdout_syslog=true
-autorestart=true
-priority=10
-EOF
+	export DEBIAN_FRONTEND=noninteractive && \
+	apt-get install -y logstash
+
+# configure logstash
+ADD etc/logstash.conf /etc/logstash.conf
+ADD etc/supervisor/conf.d/logstash.conf /etc/supervisor/conf.d/logstash.conf
 
 # install nginx and kibana
 RUN \
+	export DEBIAN_FRONTEND=noninteractive && \
 	apt-get -y install -y nginx && \
+	if ! grep "daemon off" /etc/nginx/nginx.conf; then sed -i '/worker_processes.*/a daemon off;' /etc/nginx/nginx.conf;fi && \
 	mkdir -p /var/www && \
 	wget -O kibana.tar.gz https://download.elasticsearch.org/kibana/kibana/kibana-3.1.0.tar.gz && \
 	tar xzf kibana.tar.gz -C /opt && \
-	ln -s /opt/kibana-3.1.0 /var/www/kibana && \
-	cat << EOF > /etc/supervisor/conf.d/nginx.conf
-[program:nginx]
-command=/usr/sbin/nginx
-stdout_logfile=/var/log/supervisor/%(program_name)s.log
-redirect_stderr=true
-stdout_syslog=true
-autorestart=true
-priority=10
-EOF
+	ln -s /opt/kibana-3.1.0 /var/www/kibana
 
 # configure nginx
-RUN cat << EOF > /etc/nginx/sites-enabled/default
-server {
-  listen 80 default_server;
-  listen [::]:80 default_server ipv6only=on;
+ADD etc/supervisor/conf.d/nginx.conf /etc/supervisor/conf.d/nginx.conf
+ADD etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/default
 
-  server_name           localhost;
-  access_log            /var/log/nginx/localhost.access.log;
-
-  location / {
-    root  /var/www/kibana;
-    index  index.html  index.htm;
-  }
-
-  location ~ ^/_aliases$ {
-    proxy_pass http://127.0.0.1:9200;
-    proxy_read_timeout 90;
-  }
-  location ~ ^/.*/_aliases$ {
-    proxy_pass http://127.0.0.1:9200;
-    proxy_read_timeout 90;
-  }
-  location ~ ^/_nodes$ {
-    proxy_pass http://127.0.0.1:9200;
-    proxy_read_timeout 90;
-  }
-  location ~ ^/.*/_search$ {
-    proxy_pass http://127.0.0.1:9200;
-    proxy_read_timeout 90;
-  }
-  location ~ ^/.*/_mapping {
-    proxy_pass http://127.0.0.1:9200;
-    proxy_read_timeout 90;
-  }
-}
-EOF
 EXPOSE 80
 
-CMD /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
+CMD /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
