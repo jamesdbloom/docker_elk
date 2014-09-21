@@ -30,8 +30,8 @@ RUN \
 RUN \
 	export DEBIAN_FRONTEND=noninteractive && \
 	apt-get install -y elasticsearch && \
-	sed -i '/# cluster.name:.*/a cluster.name: logstash' /etc/elasticsearch/elasticsearch.yml && \
-	sed -i '/# path.data:.*/a path.data: /mnt/data/data' /etc/elasticsearch/elasticsearch.yml
+	sed -i '/#cluster.name:.*/a cluster.name: logstash' /etc/elasticsearch/elasticsearch.yml && \
+	sed -i '/#path.conf: \/path\/to\/conf/a path.data: /mnt/data/data' /etc/elasticsearch/elasticsearch.yml
 
 # configure elasticsearch
 ADD etc/supervisor/conf.d/elasticsearch.conf /etc/supervisor/conf.d/elasticsearch.conf
