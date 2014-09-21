@@ -14,13 +14,23 @@ This **Dockerfile** has been published as a [trusted build](https://registry.hub
 
 1. Install [Docker](https://www.docker.io/).
 
-2. Download [trusted build](https://registry.hub.docker.com/u/jamesdbloom/docker-elk/) from public [Docker Registry](https://index.docker.io/): `docker pull jamesdbloom/docker-elk`
+2. Download [trusted build](https://registry.hub.docker.com/u/jamesdbloom/docker-elk/) from public [Docker Registry](https://index.docker.io/): 
+ 
+```bash
+docker pull jamesdbloom/docker-elk
+```
 
-   (alternatively, you can build an image from Dockerfile: `docker build -t="jamesdbloom/docker-elk" github.com/jamesdbloom/docker_elk`)
+**OR** build from Dockerfile: 
+   
+```bash
+git clone https://github.com/jamesdbloom/docker_elk.git
+docker build -t="jamesdbloom/docker-elk" .
+```
 
 
 ### Usage
 
 docker run -i -t -name docker-elk -rm jamesdbloom/docker-elk
+
     
 [James D Bloom](http://blog.jamesdbloom.com)
