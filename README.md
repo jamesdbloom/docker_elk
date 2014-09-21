@@ -1,4 +1,4 @@
-## elasticsearch, logstash & kibana (ELK) on ubuntu dockerfile
+## elasticsearch, logstash & kibana (ELK)
 
 This repository contains a **Dockerfile** to create a docker container with elasticsearch, logstash & kibana (ELK) on ubuntu
 
