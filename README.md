@@ -30,7 +30,9 @@ docker build -t="jamesdbloom/docker-elk" .
 
 ### Usage
 
+```bash
 docker run -i -t -name docker-elk -rm jamesdbloom/docker-elk
+```
 
     
 [James D Bloom](http://blog.jamesdbloom.com)
